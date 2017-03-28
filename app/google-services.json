@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "505405769926",
+    "firebase_url": "https://umessenger-8569c.firebaseio.com",
+    "project_id": "umessenger-8569c",
+    "storage_bucket": "umessenger-8569c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:505405769926:android:c6eb8adfec34d64a",
+        "android_client_info": {
+          "package_name": "com.kaisapp.umessenger"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "505405769926-rfuga5ae7fccdu4hts0bu9tk5rgi613s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kaisapp.umessenger",
+            "certificate_hash": "e39b2871a74f079550b7bfcdba49c78262e4f8c2"
+          }
+        },
+        {
+          "client_id": "505405769926-u671ill7p05vj1frst49gikuufl6am3f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCy-bNn6ccCAWZpOB-hBtIxIIJgeB3GguU"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "505405769926-u671ill7p05vj1frst49gikuufl6am3f.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
