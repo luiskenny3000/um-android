@@ -59,7 +59,7 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.ViewHo
         final ContactModel contact = list.get(position);
 
         holder.tvName.setText(contact.getName());
-        holder.tvPhoneNumber.setText(contact.getPhoneNumber());
+        holder.tvPhoneNumber.setText(contact.getCelphone());
 
         holder.rl.setOnClickListener(new View.OnClickListener() {
             @Override

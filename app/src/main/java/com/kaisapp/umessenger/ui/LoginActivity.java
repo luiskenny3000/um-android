@@ -1,7 +1,7 @@
 package com.kaisapp.umessenger.ui;
 
-import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
@@ -12,6 +12,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
+import com.kaisapp.umessenger.BuildConfig;
 import com.kaisapp.umessenger.R;
 import com.kaisapp.umessenger.utils.Util;
 
@@ -26,7 +27,6 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 import static android.R.id.message;
-import static com.kaisapp.umessenger.utils.Util.getIp;
 
 /**
  * Created by kennyorellana on 27/3/17.
@@ -34,8 +34,6 @@ import static com.kaisapp.umessenger.utils.Util.getIp;
 
 public class LoginActivity extends AppCompatActivity {
     private final String TAG = LoginActivity.class.getSimpleName();
-
-    private static String SERVER_IP = "192.168.2.4";
 
     OkHttpClient client;
     ProgressDialog progressDialog;
@@ -47,9 +45,12 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_login);
-        setupView();
-        SERVER_IP = getIp(this);
+        if(Util.isLogged(this)) {
+            showHomeActivity();
+        } else {
+            setContentView(R.layout.activity_login);
+            setupView();
+        }
     }
 
     private void setupView(){
@@ -66,12 +67,10 @@ public class LoginActivity extends AppCompatActivity {
         buttonLogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                showHomeActivity();
-                /*
                 if(isValid()){
                     login(etPhoneNumber.getText().toString(), etPassword.getText().toString());
                 }
-                */
+
             }
         });
 
@@ -83,6 +82,8 @@ public class LoginActivity extends AppCompatActivity {
                 }
             }
         });
+
+        etPhoneNumber.setText(Util.getPhoneNumber(this));
     }
 
     private boolean isValid(){
@@ -92,7 +93,7 @@ public class LoginActivity extends AppCompatActivity {
             valid = false;
         }
 
-        if(etPassword.getText().toString().length()<6){
+        if(etPassword.getText().toString().length()<4){
             valid = false;
         }
 
@@ -100,44 +101,59 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void login(String phoneNumber, String password){
+        progressDialog.setMessage("Iniciando Sesión");
         progressDialog.show();
 
         RequestBody requestBody = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("celphone", phoneNumber)
                 .addFormDataPart("password", password)
-                .addFormDataPart("name", "")
-                .addFormDataPart("photo","")
-                .addFormDataPart("state", "")
-                .addFormDataPart("deviceid", Util.getDeviceToken())
                 .build();
 
         Request request = new Request.Builder()
-                .url("http://" + SERVER_IP + "/chat/web/user/setuser")
+                .url(BuildConfig.SERVER + "/user/login")
                 .post(requestBody)
                 .build();
 
-        Log.i(TAG, "sendMessage " + new Gson().toJson(message));
+        Log.i(TAG, "sendMessage");
 
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
                 Log.i(TAG, "error "+e.toString());
                 progressDialog.dismiss();
-                Toast.makeText(LoginActivity.this, "Error", Toast.LENGTH_LONG).show();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(LoginActivity.this, "Error", Toast.LENGTH_LONG).show();
+                    }
+                });
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                Log.i(TAG, "response " + response.toString());
-                Util.setPhoneNumber(LoginActivity.this, etPhoneNumber.getText().toString());
                 progressDialog.dismiss();
-                showHomeActivity();
+
+                String message = response.body().string();
+                Log.i(TAG, "response " + response.toString()+", "+ message);
+                if(message!=null && message.equalsIgnoreCase("true")) {
+                    Util.setPhoneNumber(LoginActivity.this, etPhoneNumber.getText().toString());
+                    Util.setLogged(LoginActivity.this, true);
+                    showHomeActivity();
+                } else {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(LoginActivity.this, "Error", Toast.LENGTH_LONG).show();
+                        }
+                    });
+                }
             }
         });
     }
 
     private void signup(String phoneNumber, String password){
+        progressDialog.setMessage("Registrando Usuario");
         progressDialog.show();
 
         RequestBody requestBody = new MultipartBody.Builder()
@@ -151,7 +167,7 @@ public class LoginActivity extends AppCompatActivity {
                 .build();
 
         Request request = new Request.Builder()
-                .url("http://" + SERVER_IP + "/chat/web/user/setuser")
+                .url(BuildConfig.SERVER + "/user/setuser")
                 .post(requestBody)
                 .build();
 
@@ -162,15 +178,32 @@ public class LoginActivity extends AppCompatActivity {
             public void onFailure(Call call, IOException e) {
                 Log.i(TAG, "error "+e.toString());
                 progressDialog.dismiss();
-                Toast.makeText(LoginActivity.this, "Error", Toast.LENGTH_LONG).show();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(LoginActivity.this, "Error", Toast.LENGTH_LONG).show();
+                    }
+                });
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                Log.i(TAG, "response " + response.toString());
-                Util.setPhoneNumber(LoginActivity.this, etPhoneNumber.getText().toString());
                 progressDialog.dismiss();
-                showHomeActivity();
+
+                String message = response.body().string();
+                Log.i(TAG, "response " + response.toString()+", "+ message);
+                if(message!=null && message.equalsIgnoreCase("true")) {
+                    Util.setPhoneNumber(LoginActivity.this, etPhoneNumber.getText().toString());
+                    Util.setLogged(LoginActivity.this, true);
+                    showHomeActivity();
+                } else {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(LoginActivity.this, "Error", Toast.LENGTH_LONG).show();
+                        }
+                    });
+                }
             }
         });
     }
@@ -178,23 +211,17 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        SERVER_IP = getIp(this);
-        etPhoneNumber.setText(Util.getPhoneNumber(this));
     }
 
     private void showHomeActivity(){
-        /*
         Intent intent = new Intent(this, HomeActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        startActivity(intent);
-        */
-        setResult(Activity.RESULT_OK);
-        finish();
-    }
 
-    @Override
-    public void onBackPressed() {
-        moveTaskToBack(true);
+        if(getIntent()!=null && getIntent().getExtras()!=null){
+            intent.putExtras(getIntent().getExtras());
+        }
+        startActivity(intent);
+        finish();
     }
 
 }

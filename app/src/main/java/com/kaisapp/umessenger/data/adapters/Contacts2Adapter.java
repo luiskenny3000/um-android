@@ -70,12 +70,12 @@ public class Contacts2Adapter extends RecyclerView.Adapter<Contacts2Adapter.View
         Cursor phones = context.getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, ContactsContract.CommonDataKinds.Phone.CONTACT_ID+" = "+cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID)),null, null);
 
         if(phones!=null && phones.moveToNext()){
-            contact.setPhoneNumber(phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)));
+            contact.setCelphone(phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)));
             phones.close();
         }
 
         holder.tvName.setText(contact.getName());
-        holder.tvPhoneNumber.setText(contact.getPhoneNumber());
+        holder.tvPhoneNumber.setText(contact.getCelphone());
 
         holder.ivMessage.setOnClickListener(new View.OnClickListener() {
             @Override

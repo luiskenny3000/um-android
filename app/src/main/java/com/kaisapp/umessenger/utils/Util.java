@@ -5,10 +5,20 @@ import android.content.SharedPreferences;
 import android.util.Log;
 
 import com.google.firebase.iid.FirebaseInstanceId;
+import com.kaisapp.umessenger.BuildConfig;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.regex.Pattern;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 /**
  * Created by kenny on 12/2/17.
@@ -17,36 +27,8 @@ import java.util.regex.Pattern;
 public class Util {
     private static final Pattern REGEX_IP = Pattern.compile("^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
     private static final String DATA = "data";
-    private static final String IP = "ip";
     private static final String LOGGED = "logged";
-    private static final String IP_DEFAULT = "192.168.1.5";
     private static final String PHONE_NUMBER ="phoneNumber";
-    private static final int PORT_DEFAULT = 10000;
-
-
-    public static String getIp(Context context){
-        if(context==null) return IP_DEFAULT;
-
-        String ip;
-
-        SharedPreferences sp = context.getSharedPreferences(DATA, Context.MODE_PRIVATE);
-        ip = sp.getString(IP, IP_DEFAULT);
-
-        if(isValidIp(ip)){
-            return ip;
-        } else {
-            return IP_DEFAULT;
-        }
-    }
-
-    public static void setIp(Context context, String ip){
-        if(context==null || !isValidIp(ip)) return;
-
-        SharedPreferences sp = context.getSharedPreferences(DATA, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sp.edit();
-        editor.putString(IP, ip);
-        editor.apply();
-    }
 
     public static boolean isLogged(Context context){
         if(context==null) return false;
@@ -62,12 +44,6 @@ public class Util {
         SharedPreferences.Editor editor = sp.edit();
         editor.putBoolean(LOGGED, logged);
         editor.apply();
-    }
-
-    public static boolean isValidIp(String ip){
-        if(ip==null || ip.equalsIgnoreCase("")) return false;
-
-        return REGEX_IP.matcher(ip).matches();
     }
 
     public static String getPhoneNumber(Context context){
@@ -90,13 +66,9 @@ public class Util {
         editor.apply();
     }
 
-    public static boolean isPhoneNumber(String ip){
-        return ip.length()==8;
-    }
-
     public static String getDateString(){
         Calendar calendar = Calendar.getInstance();
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         String date = "";
 
         try {
@@ -117,5 +89,39 @@ public class Util {
         }
 
         return token;
+    }
+
+    public static void updateToken(String phoneNumber, String token){
+        OkHttpClient client = new OkHttpClient();
+
+        RequestBody requestBody = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("celphone", phoneNumber)
+                .addFormDataPart("device", token)
+                .build();
+
+        Request request = new Request.Builder()
+                .url(BuildConfig.SERVER + "user/updateuser")
+                .post(requestBody)
+                .build();
+
+        Log.i("UpdateToken", "token: " + token);
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.i("UpdateToken", "error "+e.toString());
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                String message = response.message();
+                Log.i("UpdateToken", "response " + message);
+            }
+        });
+    }
+
+    public static void updateToken(Context context){
+        updateToken(getPhoneNumber(context), getDeviceToken());
     }
 }

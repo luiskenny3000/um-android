@@ -18,24 +18,43 @@ import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
+import android.util.Log;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import com.kaisapp.umessenger.BuildConfig;
 import com.kaisapp.umessenger.Constans;
 import com.kaisapp.umessenger.R;
 import com.kaisapp.umessenger.data.adapters.ContactsAdapter;
 import com.kaisapp.umessenger.data.models.ContactModel;
 import com.kaisapp.umessenger.utils.Util;
 
+import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
+import static android.R.id.message;
 
 /**
  * Created by kennyorellana on 25/3/17.
  */
 
 public class HomeActivity extends AppCompatActivity implements ContactsAdapter.ContactsListener{
+    private static final String TAG = HomeActivity.class.getSimpleName();
     public final static int PERMISSION_REQUEST_CONTACT = 1234;
     public final static int LOGIN = 9876;
+
+    OkHttpClient client;
 
     SearchView searchView;
     SwipeRefreshLayout swipeRefreshLayout;
@@ -49,22 +68,14 @@ public class HomeActivity extends AppCompatActivity implements ContactsAdapter.C
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
-        create();
-
-        if(Util.isLogged(this)) {
-        } else {
-            showLoginActivity();
-        }
+        client = new OkHttpClient();
+        setupView();
+        askForContactPermission();
+        Util.updateToken(this);
     }
 
     private void create(){
-        setupView();
-        askForContactPermission();
-    }
 
-    private void showLoginActivity(){
-        Intent intent = new Intent(this, LoginActivity.class);
-        startActivityForResult(intent, LOGIN);
     }
 
     private void setupView(){
@@ -134,8 +145,15 @@ public class HomeActivity extends AppCompatActivity implements ContactsAdapter.C
             }
         }
 
-        list.addAll(listContacts);
-        contactsAdapter.notifyDataSetChanged();
+        ArrayList<String> contacts = new ArrayList<>();
+
+        for(ContactModel contact: listContacts){
+            contacts.add(contact.getCelphone());
+        }
+
+        sendContacts(new Gson().toJson(contacts));
+        //list.addAll(listContacts);
+        //contactsAdapter.notifyDataSetChanged();
     }
 
     public void askForContactPermission(){
@@ -154,6 +172,7 @@ public class HomeActivity extends AppCompatActivity implements ContactsAdapter.C
             getContacts();
         }
     }
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
@@ -194,5 +213,75 @@ public class HomeActivity extends AppCompatActivity implements ContactsAdapter.C
                 break;
         }
 
+    }
+
+    private void sendContacts(String contacts){
+
+        RequestBody requestBody = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("cellphones", contacts)
+                .build();
+
+        Request request = new Request.Builder()
+                .url(BuildConfig.SERVER + "/user/getusers")
+                .post(requestBody)
+                .build();
+
+        Log.i(TAG, "sendMessage " + new Gson().toJson(message));
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.i(TAG, "error "+e.toString());
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                String message = response.body().string();
+                Log.i(TAG, "response " + message);
+
+                Type listType = new TypeToken<ArrayList<ContactModel>>(){}.getType();
+                ArrayList<ContactModel> listTemp = new Gson().fromJson(message, listType);
+
+                for(ContactModel contact: listContacts){
+                    for(ContactModel c: listTemp){
+                        if(contact.getCelphone().equalsIgnoreCase(c.getCelphone())){
+                            list.add(contact);
+                        }
+                    }
+                }
+
+                listContacts.clear();
+                listContacts.addAll(list);
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        contactsAdapter.notifyDataSetChanged();
+                        checkDeepLink();
+                    }
+                });
+            }
+        });
+    }
+
+    private void checkDeepLink(){
+        Bundle bundle = getIntent().getExtras();
+
+        if(bundle!=null){
+            String number = bundle.getString("number","");
+
+            if(!number.equalsIgnoreCase("")){
+                Log.i("PushNotification", number);
+
+                for(ContactModel contact: listContacts){
+                    if(contact.getCelphone().equalsIgnoreCase(number)){
+                        onClick(contact);
+                        break;
+                    }
+                }
+            }
+
+        }
     }
 }

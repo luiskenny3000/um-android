@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.kaisapp.umessenger.R;
@@ -33,11 +34,13 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
 
         holder.textView.setText(item.getText());
         if(item.isLocal(context)){
-            holder.textView.setGravity(Gravity.RIGHT);
-            holder.textView.setTextColor(context.getResources().getColor(R.color.colorPrimary));
+            holder.ll.setGravity(Gravity.RIGHT);
+            holder.textView.setBackgroundResource(R.drawable.bg_square_rounded_send);
+            //holder.textView.setTextColor(context.getResources().getColor(android.R.color.white));
         } else {
-            holder.textView.setGravity(Gravity.LEFT);
-            holder.textView.setTextColor(context.getResources().getColor(R.color.colorAccent));
+            holder.ll.setGravity(Gravity.LEFT);
+            holder.textView.setBackgroundResource(R.drawable.bg_square_rounded_receive);
+            //holder.textView.setTextColor(context.getResources().getColor(R.color.textPrimary));
         }
 
         /*
@@ -59,11 +62,13 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
     }
 
     public static class MessageViewHolder extends RecyclerView.ViewHolder{
+        LinearLayout ll;
         TextView textView;
         ImageView imageView;
 
         public MessageViewHolder(View itemView) {
             super(itemView);
+            ll = (LinearLayout)itemView.findViewById(R.id.ll);
             textView = (TextView)itemView.findViewById(R.id.tv_message);
             imageView = (ImageView)itemView.findViewById(R.id.imageView);
         }

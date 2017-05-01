@@ -29,11 +29,12 @@
 
         <activity android:name=".ui.ChatActivity">
         </activity>
-        <activity
-            android:name=".ui.SettingsActivity"
-            android:label="@string/title_activity_settings"></activity>
 
         <activity android:name=".ui.HomeActivity">
+        </activity>
+
+        <activity android:name=".ui.LoginActivity"
+            android:theme="@style/AppThemeNoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -43,11 +44,6 @@
                 <action android:name="OPEN_ACTIVITY" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-        </activity>
-
-        <activity android:name=".ui.LoginActivity"
-            android:theme="@style/AppThemeNoActionBar">
-
         </activity>
     </application>
 

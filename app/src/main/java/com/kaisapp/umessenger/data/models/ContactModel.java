@@ -8,7 +8,7 @@ import java.io.Serializable;
 
 public class ContactModel implements Serializable {
     private String name;
-    private String phoneNumber;
+    private String celphone;
 
     public String getName() {
         if(name==null){
@@ -26,24 +26,24 @@ public class ContactModel implements Serializable {
     public ContactModel() {
     }
 
-    public ContactModel(String name, String phoneNumber) {
+    public ContactModel(String name, String celphone) {
         this.name = name;
-        this.phoneNumber = phoneNumber;
+        this.celphone = celphone;
     }
 
     public void setName(String name) {
         this.name = name;
     }
 
-    public String getPhoneNumber() {
-        if(phoneNumber==null){
-            phoneNumber = "";
+    public String getCelphone() {
+        if(celphone ==null){
+            celphone = "";
         }
-        phoneNumber = phoneNumber.replace("-","").replace(" ","").replace("+504","");
-        return phoneNumber;
+        celphone = celphone.replace("-","").replace(" ","").replace("+504","");
+        return celphone;
     }
 
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
+    public void setCelphone(String celphone) {
+        this.celphone = celphone;
     }
 }

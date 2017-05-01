@@ -1,5 +1,7 @@
 package com.kaisapp.umessenger.notifications;
 
+import android.util.Log;
+
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
@@ -8,9 +10,11 @@ import com.google.firebase.messaging.RemoteMessage;
  */
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
-
+    private static final String TAG = "MessageService";
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
+
+        Log.i("PushNotification", remoteMessage.getData().toString());
     }
 }
