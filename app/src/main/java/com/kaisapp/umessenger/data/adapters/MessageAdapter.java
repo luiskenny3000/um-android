@@ -2,6 +2,7 @@ package com.kaisapp.umessenger.data.adapters;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
+import android.util.Base64;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,6 +15,8 @@ import com.kaisapp.umessenger.R;
 import com.kaisapp.umessenger.data.models.MessageModel;
 
 import java.util.ArrayList;
+
+import static android.graphics.BitmapFactory.decodeByteArray;
 
 /**
  * Created by kenny on 5/2/17.
@@ -32,15 +35,47 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
     public void onBindViewHolder(MessageViewHolder holder, int position) {
         MessageModel item = list.get(position);
 
-        holder.textView.setText(item.getText());
-        if(item.isLocal(context)){
-            holder.ll.setGravity(Gravity.RIGHT);
-            holder.textView.setBackgroundResource(R.drawable.bg_square_rounded_send);
-            //holder.textView.setTextColor(context.getResources().getColor(android.R.color.white));
+        if(item.getType().equalsIgnoreCase(MessageModel.IMAGE)){
+            holder.textView.setVisibility(View.GONE);
+            holder.imageView.setVisibility(View.VISIBLE);
+
+            if (item.isLocal(context)) {
+                holder.ll.setGravity(Gravity.RIGHT);
+                holder.imageView.setBackgroundResource(R.drawable.bg_square_rounded_send);
+                try {
+                    byte[] decodedString = Base64.decode(item.getText(), Base64.DEFAULT);
+                    holder.imageView.setImageBitmap(decodeByteArray(decodedString, 0, decodedString.length));
+                    holder.imageView.setVisibility(View.VISIBLE);
+                } catch (Exception e){
+                    //e.printStackTrace();
+                    holder.imageView.setVisibility(View.GONE);
+                }
+            } else {
+                holder.ll.setGravity(Gravity.LEFT);
+                holder.imageView.setBackgroundResource(R.drawable.bg_square_rounded_receive);
+                try {
+                    byte[] decodedString = Base64.decode(item.getText(), Base64.DEFAULT);
+                    holder.imageView.setImageBitmap(decodeByteArray(decodedString, 0, decodedString.length));
+                    holder.imageView.setVisibility(View.VISIBLE);
+                } catch (Exception e){
+                    //e.printStackTrace();
+                    holder.imageView.setVisibility(View.GONE);
+                }
+            }
         } else {
-            holder.ll.setGravity(Gravity.LEFT);
-            holder.textView.setBackgroundResource(R.drawable.bg_square_rounded_receive);
-            //holder.textView.setTextColor(context.getResources().getColor(R.color.textPrimary));
+            holder.textView.setVisibility(View.VISIBLE);
+            holder.imageView.setVisibility(View.GONE);
+
+            holder.textView.setText(item.getText());
+            if (item.isLocal(context)) {
+                holder.ll.setGravity(Gravity.RIGHT);
+                holder.textView.setBackgroundResource(R.drawable.bg_square_rounded_send);
+                //holder.textView.setTextColor(context.getResources().getColor(android.R.color.white));
+            } else {
+                holder.ll.setGravity(Gravity.LEFT);
+                holder.textView.setBackgroundResource(R.drawable.bg_square_rounded_receive);
+                //holder.textView.setTextColor(context.getResources().getColor(R.color.textPrimary));
+            }
         }
 
         /*

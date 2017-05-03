@@ -8,6 +8,7 @@ android {
         applicationId "com.kaisapp.umessenger"
         minSdkVersion 19
         targetSdkVersion 25
+        multiDexEnabled true
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -38,5 +39,10 @@ dependencies {
     compile 'com.squareup.okhttp3:okhttp:3.6.0'
     compile 'com.github.bumptech.glide:glide:3.7.0'
     compile 'com.google.code.gson:gson:2.8.0'
+
+    compile group: 'com.cloudinary', name: 'cloudinary-http43', version: '1.2.2'
+    compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.3'
+
+    compile 'com.android.support:multidex:1.0.1'
 }
 apply plugin: 'com.google.gms.google-services'

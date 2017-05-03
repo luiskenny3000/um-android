@@ -11,6 +11,9 @@ import java.io.Serializable;
  */
 
 public class MessageModel implements Serializable {
+    public static String TEXT = "0";
+    public static String IMAGE = "1";
+
     private transient boolean isLocal;
     private String transmitter;
     private String receiver;
@@ -22,13 +25,22 @@ public class MessageModel implements Serializable {
         this.text = message;
     }
 
+    public MessageModel(String message, String transmitter, String receiver, String type) {
+        isLocal = true;
+        this.transmitter = transmitter;
+        this.receiver = receiver;
+        this.text = message;
+        this.date = Util.getDateString();
+        this.type = type;
+    }
+
     public MessageModel(String message, String transmitter, String receiver) {
         isLocal = true;
         this.transmitter = transmitter;
         this.receiver = receiver;
         this.text = message;
         this.date = Util.getDateString();
-        this.type = "0";
+        this.type = TEXT;
     }
 
     public boolean isLocal(Context context) {

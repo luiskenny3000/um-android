@@ -1,11 +1,23 @@
 package com.kaisapp.umessenger.ui;
 
+import android.Manifest;
+import android.app.Activity;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.MediaStore;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Base64;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -13,6 +25,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import com.cloudinary.Cloudinary;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.kaisapp.umessenger.BuildConfig;
@@ -24,9 +37,12 @@ import com.kaisapp.umessenger.data.models.ContactModel;
 import com.kaisapp.umessenger.data.models.MessageModel;
 import com.kaisapp.umessenger.utils.Util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -42,13 +58,14 @@ public class ChatActivity extends AppCompatActivity implements InputThread.Messa
     OkHttpClient client;
 
     private static final String TAG = ChatActivity.class.getSimpleName();
+    private static int RESULT_LOAD_IMAGE = 1234;
 
     RecyclerView recyclerView;
     ArrayList<MessageModel> list = new ArrayList<>();
     EditText etMessage;
     ImageButton ivSend;
     MessageAdapter adapter;
-
+    Cloudinary cloudinary;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,14 +111,21 @@ public class ChatActivity extends AppCompatActivity implements InputThread.Messa
 
                 if(event.getAction() == MotionEvent.ACTION_UP) {
                     if(event.getRawX() >= (etMessage.getRight() - etMessage.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width())) {
-                        // your action here
-
+                        getImage();
                         return true;
                     }
                 }
                 return false;
             }
         });
+
+        Map config = new HashMap();
+        config.put("cloud_name", "kaisapp");
+        config.put("api_key", "338356817841841");
+        config.put("api_secret", "kJKEupW3EXcrdanqdQ3Uywh1P");
+        cloudinary = new Cloudinary(config);
+
+        verifyStoragePermissions(this);
     }
 
     private void getData(){
@@ -224,7 +248,7 @@ public class ChatActivity extends AppCompatActivity implements InputThread.Messa
                     getMessages();
                 }
             });
-            handler.postDelayed(runnable, 1000);
+            handler.postDelayed(runnable, 10000);
         }
     };
 
@@ -235,5 +259,69 @@ public class ChatActivity extends AppCompatActivity implements InputThread.Messa
         getMessages();
         handler.removeCallbacks(runnable);
         handler.postDelayed(runnable, 1000);
+    }
+
+    private void getImage(){
+        Intent i = new Intent(Intent.ACTION_PICK,android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        startActivityForResult(i, RESULT_LOAD_IMAGE);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == RESULT_LOAD_IMAGE && resultCode == RESULT_OK && null != data) {
+            Uri selectedImage = data.getData();
+            String[] filePathColumn = { MediaStore.Images.Media.DATA };
+            Cursor cursor = getContentResolver().query(selectedImage,filePathColumn, null, null, null);
+            cursor.moveToFirst();
+            int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+            String picturePath = cursor.getString(columnIndex);
+            cursor.close();
+            MessageModel messageModel = new MessageModel(resizeImage(picturePath), Util.getPhoneNumber(ChatActivity.this), contact.getCelphone(), MessageModel.IMAGE);
+            sendMessage(messageModel);
+            Log.i(TAG, "size" + messageModel.getText().length());
+        }
+    }
+
+    private String resizeImage(String picture){
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inDensity = DisplayMetrics.DENSITY_LOW;
+        //options.outHeight = 160*DisplayMetrics.DENSITY_MEDIUM;
+
+        Bitmap bitmap = BitmapFactory.decodeFile(picture, options);
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 0, bos);
+        byte[] bitmapdata = bos.toByteArray();
+
+        return Base64.encodeToString(bitmapdata, Base64.DEFAULT);
+    }
+
+    private static final int REQUEST_EXTERNAL_STORAGE = 1;
+    private static String[] PERMISSIONS_STORAGE = {
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+    };
+
+    /**
+     * Checks if the app has permission to write to device storage
+     *
+     * If the app does not has permission then the user will be prompted to grant permissions
+     *
+     * @param activity
+     */
+    public static void verifyStoragePermissions(Activity activity) {
+        // Check if we have write permission
+        int permission = ActivityCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+            // We don't have permission so prompt the user
+            ActivityCompat.requestPermissions(
+                    activity,
+                    PERMISSIONS_STORAGE,
+                    REQUEST_EXTERNAL_STORAGE
+            );
+        }
     }
 }

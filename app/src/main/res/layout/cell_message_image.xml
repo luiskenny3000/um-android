@@ -23,9 +23,15 @@
     <ImageView
         android:id="@+id/imageView"
         android:visibility="gone"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginTop="4dp"
+        android:paddingLeft="4dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        android:paddingRight="4dp"
+        android:layout_width="wrap_content"
+        android:layout_height="160dp"
         android:adjustViewBounds="true"
-        android:scaleType="centerInside"
-        app:srcCompat="@drawable/background" />
+        android:scaleType="centerInside" />
 </LinearLayout>
