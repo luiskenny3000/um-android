@@ -42,10 +42,22 @@
             android:hint="Escribir Mensaje"
             android:layout_centerVertical="true"
             android:layout_alignParentLeft="true"
-            android:layout_toLeftOf="@+id/iv_send"
+            android:layout_toLeftOf="@+id/iv_record"
             android:drawableRight="@drawable/ic_photo_camera_white_24px"
             android:drawableTint="@color/colorAccent"
             android:layout_marginRight="8dp"/>
+
+        <ImageButton
+            android:id="@+id/iv_record"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="8dp"
+            android:layout_marginRight="8dp"
+            android:layout_centerVertical="true"
+            android:background="@drawable/bg_circle_accent"
+            android:tint="@color/white"
+            android:layout_toLeftOf="@+id/iv_send"
+            android:src="@drawable/ic_mic_black_24dp"/>
 
         <ImageButton
             android:id="@+id/iv_send"

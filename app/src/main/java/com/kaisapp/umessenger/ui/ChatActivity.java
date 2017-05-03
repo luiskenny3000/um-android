@@ -7,11 +7,15 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.MediaPlayer;
+import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -38,7 +42,13 @@ import com.kaisapp.umessenger.data.models.MessageModel;
 import com.kaisapp.umessenger.utils.Util;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -53,19 +63,27 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-public class ChatActivity extends AppCompatActivity implements InputThread.MessageListener {
+public class ChatActivity extends AppCompatActivity implements InputThread.MessageListener, MessageAdapter.MListener {
     ContactModel contact;
     OkHttpClient client;
 
     private static final String TAG = ChatActivity.class.getSimpleName();
-    private static int RESULT_LOAD_IMAGE = 1234;
+    private static final int RESULT_LOAD_IMAGE = 1234;
+    private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
+    private static String mFileName = null;
+    private boolean recording;
+    private boolean playing;
 
     RecyclerView recyclerView;
     ArrayList<MessageModel> list = new ArrayList<>();
     EditText etMessage;
     ImageButton ivSend;
+    ImageButton ivRecord;
     MessageAdapter adapter;
     Cloudinary cloudinary;
+
+    private MediaRecorder mRecorder = null;
+    private MediaPlayer mPlayer = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,6 +99,7 @@ public class ChatActivity extends AppCompatActivity implements InputThread.Messa
         recyclerView = (RecyclerView)findViewById(R.id.recycler_view);
         etMessage = (EditText)findViewById(R.id.et_message);
         ivSend =  (ImageButton) findViewById(R.id.iv_send);
+        ivRecord =  (ImageButton) findViewById(R.id.iv_record);
 
         adapter = new MessageAdapter(this, list);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -98,6 +117,13 @@ public class ChatActivity extends AppCompatActivity implements InputThread.Messa
                     sendMessage(new MessageModel(etMessage.getText().toString(), Util.getPhoneNumber(ChatActivity.this), contact.getCelphone()));
                     etMessage.setText("");
                 }
+            }
+        });
+
+        ivRecord.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                record();
             }
         });
 
@@ -248,7 +274,7 @@ public class ChatActivity extends AppCompatActivity implements InputThread.Messa
                     getMessages();
                 }
             });
-            handler.postDelayed(runnable, 10000);
+            handler.postDelayed(runnable, 1000);
         }
     };
 
@@ -323,5 +349,140 @@ public class ChatActivity extends AppCompatActivity implements InputThread.Messa
                     REQUEST_EXTERNAL_STORAGE
             );
         }
+    }
+
+    // Requesting permission to RECORD_AUDIO
+    private boolean permissionToRecordAccepted = false;
+    private String [] permissions = {Manifest.permission.RECORD_AUDIO};
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode){
+            case REQUEST_RECORD_AUDIO_PERMISSION:
+                permissionToRecordAccepted  = grantResults[0] == PackageManager.PERMISSION_GRANTED;
+                startRecording();
+                break;
+        }
+        //if (!permissionToRecordAccepted ) finish();
+
+    }
+
+    private void record(){
+
+        if(!recording) {
+            recording = true;
+            mFileName = getExternalCacheDir().getAbsolutePath();
+            mFileName += "/" + Util.getDateString() + ".3gp";
+
+            if (ContextCompat.checkSelfPermission(this,
+                    Manifest.permission_group.MICROPHONE)
+                    != PackageManager.PERMISSION_GRANTED) {
+
+                ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION);
+
+            } else {
+                startRecording();
+            }
+
+        } else {
+            recording = false;
+            stopRecording();
+        }
+    }
+
+    private void startRecording() {
+        ivRecord.setBackgroundResource(R.drawable.bg_circle_red);
+        mRecorder = new MediaRecorder();
+        mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+        mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+        mRecorder.setOutputFile(mFileName);
+        mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+
+        try {
+            mRecorder.prepare();
+        } catch (IOException e) {
+            Log.e(TAG, "prepare() failed");
+        }
+
+        mRecorder.start();
+    }
+
+    private void stopRecording() {
+        ivRecord.setBackgroundResource(R.drawable.bg_circle_accent);
+        mRecorder.stop();
+        mRecorder.release();
+        mRecorder = null;
+
+        MessageModel messageModel = new MessageModel(prepareAudio(), Util.getPhoneNumber(ChatActivity.this), contact.getCelphone(), MessageModel.AUDIO);
+        sendMessage(messageModel);
+    }
+
+    private String prepareAudio(){
+        InputStream inputStream = null;
+        byte[] soundBytes;
+        try {
+            inputStream = getContentResolver().openInputStream(Uri.fromFile(new File(mFileName)));
+            soundBytes = new byte[inputStream.available()];
+            soundBytes = toByteArray(inputStream);
+            return Base64.encodeToString(soundBytes, Base64.DEFAULT);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "Error";
+    }
+
+    public byte[] toByteArray(InputStream in) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        int read = 0;
+        byte[] buffer = new byte[1024];
+        while (read != -1) {
+            read = in.read(buffer);
+            if (read != -1)
+                out.write(buffer,0,read);
+        }
+        out.close();
+        return out.toByteArray();
+    }
+
+    @Override
+    public void play(String data) {
+        if (!playing) {
+            playing = true;
+            byte[] decodedString = Base64.decode(data, Base64.DEFAULT);
+            File tempMp3 = null;
+            try {
+                tempMp3 = File.createTempFile(Util.getDateString(), "3gp", getCacheDir());
+                tempMp3.deleteOnExit();
+                FileOutputStream fos = new FileOutputStream(tempMp3);
+                fos.write(decodedString);
+                fos.close();
+                FileInputStream fis = new FileInputStream(tempMp3);
+                startPlaying(fis.getFD());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            playing = false;
+            stopPlaying();
+        }
+    }
+
+    private void startPlaying(FileDescriptor source) {
+        mPlayer = new MediaPlayer();
+        try {
+            mPlayer.setDataSource(source);
+            mPlayer.prepare();
+            mPlayer.start();
+        } catch (IOException e) {
+            Log.e(TAG, "prepare() failed");
+        }
+    }
+
+    private void stopPlaying() {
+        mPlayer.release();
+        mPlayer = null;
     }
 }

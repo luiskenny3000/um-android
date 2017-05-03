@@ -25,15 +25,21 @@ import static android.graphics.BitmapFactory.decodeByteArray;
 public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageViewHolder> {
     Context context;
     ArrayList<MessageModel> list;
+    MListener listener;
+
+    public interface MListener{
+        public void play(String data);
+    }
 
     public MessageAdapter(Context context, ArrayList<MessageModel> list) {
         this.context = context;
+        this.listener = (MListener)context;
         this.list = list;
     }
 
     @Override
     public void onBindViewHolder(MessageViewHolder holder, int position) {
-        MessageModel item = list.get(position);
+        final MessageModel item = list.get(position);
 
         if(item.getType().equalsIgnoreCase(MessageModel.IMAGE)){
             holder.textView.setVisibility(View.GONE);
@@ -62,6 +68,25 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                     holder.imageView.setVisibility(View.GONE);
                 }
             }
+        } else if(item.getType().equalsIgnoreCase(MessageModel.AUDIO)){
+            holder.textView.setVisibility(View.GONE);
+            holder.imageView.setVisibility(View.VISIBLE);
+
+            if (item.isLocal(context)) {
+                holder.ll.setGravity(Gravity.RIGHT);
+                holder.imageView.setBackgroundResource(R.drawable.bg_square_rounded_send);
+            } else {
+                holder.ll.setGravity(Gravity.LEFT);
+                holder.imageView.setBackgroundResource(R.drawable.bg_square_rounded_receive);
+            }
+
+            holder.imageView.setImageResource(R.drawable.ic_play_circle_outline_black_24dp);
+            holder.imageView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    listener.play(item.getText());
+                }
+            });
         } else {
             holder.textView.setVisibility(View.VISIBLE);
             holder.imageView.setVisibility(View.GONE);

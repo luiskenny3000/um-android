@@ -13,6 +13,7 @@ import java.io.Serializable;
 public class MessageModel implements Serializable {
     public static String TEXT = "0";
     public static String IMAGE = "1";
+    public static String AUDIO = "2";
 
     private transient boolean isLocal;
     private String transmitter;
